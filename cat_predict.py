@@ -34,24 +34,29 @@ def load_image(image_fname):
 
 
 def main():
-    if len(sys.argv) != 3:
-        print("does't have enough arguments, cat_predict <img_folder> <target>")
+    if len(sys.argv) != 4:
+        print("does't have enough arguments, cat_predict <model name> <img_folder> <target>")
         exit(-1)
-    test_folder = sys.argv[1]
-    target = sys.argv[2]
+    MODEL_NAME = sys.argv[1]
+    test_folder = sys.argv[2]
+    target = sys.argv[3]
     model = load_model(MODEL_NAME)
     correct_num = 0.
     total = 0
     for img_path in os.listdir(test_folder):
         img_path = os.path.join(test_folder, img_path)
         img = load_image(img_path)
-        label, prob, _ = classify(model, img)
-        print("We think with certainty %3.2f that it is %s." % (prob, label))
-        if target[0] == label[0]:
-            correct_num += 1
-        total += 1
+        print(img_path)
+        try:
+            label, prob, _ = classify(model, img)
+            print("We think with certainty %3.2f that it is %s." % (prob, label))
+            if target[0] == label[0]:
+                correct_num += 1
+            total += 1
+        except:
+            print("this img has some problem")
 
-    print("final accuracy of %s is %3.f" % (target, correct_num/total))
+    print("final accuracy of %s is %3.2f" % (target, correct_num/total))
 
 
 if __name__ == '__main__':

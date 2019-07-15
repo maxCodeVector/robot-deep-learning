@@ -1,12 +1,18 @@
+from tensorflow.python.keras.applications.inception_v3 import InceptionV3
+from tensorflow.python.keras.preprocessing import image
+from tensorflow.python.keras.models import Model, load_model
+from tensorflow.python.keras.callbacks import ModelCheckpoint
+from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D
+from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.python.keras.optimizers import SGD
 import os.path
 import sys
 
-from tensorflow.python.keras.applications.inception_v3 import InceptionV3
-from tensorflow.python.keras.callbacks import ModelCheckpoint
-from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D
-from tensorflow.python.keras.models import Model, load_model
-from tensorflow.python.keras.optimizers import SGD
-from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
+from PIL import ImageFile
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+
 
 if len(sys.argv) > 1:
     MODEL_FILE = sys.argv[1]
@@ -65,13 +71,13 @@ def train(model_file, train_path, validation_path,
     train_generator = train_datagen.flow_from_directory(
         train_path,
         target_size=(249, 249),
-        batch_size=2,
+        batch_size=4,
         class_mode='categorical'
     )
     validation_generator = test_datagen.flow_from_directory(
         validation_path,
         target_size=(249, 249),
-        batch_size=2,
+        batch_size=4,
         class_mode='categorical'
     )
     model.fit_generator(
@@ -103,7 +109,7 @@ def train(model_file, train_path, validation_path,
 
 def main():
     train(MODEL_FILE, train_path='cat_dataset', validation_path='cat_dataset_test',
-          steps=12, num_epochs=10)
+          steps=120, num_epochs=10)
 
 
 if __name__ == '__main__':
