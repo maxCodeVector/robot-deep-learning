@@ -6,7 +6,7 @@ from PIL import Image
 import sys
 import os
 
-MODEL_NAME = 'flowers.hd5'
+MODEL_NAME = 'cat_net.hd5'
 dict = {
     0: 'maine_coon_cat',
     1: 'ocelot_cat',
@@ -18,6 +18,8 @@ graph = None
 
 def classify(model, image):
     global graph
+    if graph is None:
+        graph = tf.get_default_graph()
     with graph.as_default():
         result = model.predict(image)
         themax = np.argmax(result)
@@ -45,25 +47,15 @@ class CatModel:
         return label, prob
 
 
-def main():
-    if len(sys.argv) != 4:
-        print("does't have enough arguments, cat_predict <model name> <img_folder> <target>")
-        exit(-1)
-    MODEL_NAME = sys.argv[1]
-    test_folder = sys.argv[2]
-    target = sys.argv[3]
-    global graph
-    graph = tf.get_default_graph()
-    model = load_model(MODEL_NAME)
+def test_folder_acc(model, test_folder, target):
     correct_num = 0.
     total = 0
     for img_path in os.listdir(test_folder):
         img_path = os.path.join(test_folder, img_path)
         img = load_image(img_path)
-        print(img_path)
         try:
             label, prob, _ = classify(model, img)
-            print("We think with certainty %3.2f that it is %s." % (prob, label))
+            print(img_path, "We think with certainty %3.2f that it is %s." % (prob, label))
             if target[0] == label[0]:
                 correct_num += 1
             total += 1
@@ -73,5 +65,21 @@ def main():
     print("final accuracy of %s is %3.2f" % (target, correct_num / total))
 
 
+def main(multi_type=False):
+    if len(sys.argv) != 4:
+        print("does't have enough arguments, cat_predict <model name> <img_folder> <target>")
+        exit(-1)
+    MODEL_NAME = sys.argv[1]
+    test_folder = sys.argv[2]
+    target = sys.argv[3]
+    model = load_model(MODEL_NAME)
+    if multi_type:
+        for one_test_folder in os.listdir(test_folder):
+            one_cat_folder = os.path.join(test_folder, one_test_folder)
+            test_folder_acc(model, one_cat_folder, one_test_folder)
+    else:
+        test_folder_acc(model, test_folder, target)
+
+
 if __name__ == '__main__':
-    main()
+    main(multi_type=False)
