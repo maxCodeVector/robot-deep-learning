@@ -27,6 +27,7 @@ train_size = int(len(dataset)*0.67)
 test_size = len(dataset) - train_size
 train, test = dataset[0:train_size], dataset[train_size:]
 
+
 def create_dataset(dataset, look_back=1):
     dataX, dataY = [], []
 

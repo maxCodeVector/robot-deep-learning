@@ -1,10 +1,10 @@
+import math
 import numpy
 import pandas
-import math
-from tensorflow.python.keras.models import Sequential
-from tensorflow.python.keras.layers import Dense, LSTM
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.python.keras.layers import Dense
+from tensorflow.python.keras.models import Sequential
 
 batch_size = 6
 look_back = 5
@@ -25,6 +25,7 @@ dataset = scaler.fit_transform(dataset)
 train_size = int(len(dataset)*0.67)
 test_size = len(dataset) - train_size
 train, test = dataset[0:train_size], dataset[train_size:]
+
 
 def create_dataset(dataset, look_back=1):
     dataX, dataY = [], []

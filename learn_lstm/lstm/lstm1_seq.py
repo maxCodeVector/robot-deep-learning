@@ -15,25 +15,27 @@ num_epochs = 500
 
 numpy.random.seed(7)
 
+# =========load data and split it to train and test data===========
 dataframe = pandas.read_csv(
-        "airline-passengers.csv", usecols=[1], engine='python')
+    "airline-passengers.csv", usecols=[1], engine='python')
 dataset = dataframe.values
 dataset = dataset.astype("float32")
 
 scaler = MinMaxScaler(feature_range=(0, 1))
 dataset = scaler.fit_transform(dataset)
 
-train_size = int(len(dataset)*0.67)
+train_size = int(len(dataset) * 0.67)
 test_size = len(dataset) - train_size
 train, test = dataset[0:train_size], dataset[train_size:]
+
 
 def create_dataset(dataset, look_back=1):
     dataX, dataY = [], []
 
-    for i in range(len(dataset)-look_back-1):
-        a = dataset[i:(i+look_back), 0]
+    for i in range(len(dataset) - look_back - 1):
+        a = dataset[i:(i + look_back), 0]
         dataX.append(a)
-        dataY.append(dataset[i+look_back, 0])
+        dataY.append(dataset[i + look_back, 0])
     return numpy.array(dataX), numpy.array(dataY)
 
 
@@ -43,7 +45,7 @@ testX, testY = create_dataset(test, look_back)
 trainX = numpy.reshape(trainX, (trainX.shape[0], 1, trainX.shape[1]))
 testX = numpy.reshape(testX, (testX.shape[0], 1, testX.shape[1]))
 
-
+# =====================build network=======================
 num_hidden = 8
 model = Sequential()
 model.add(CuDNNLSTM(num_hidden, input_shape=(1, look_back)))
@@ -64,8 +66,3 @@ print('Train Score: %.2f RMSE' % (trainScore))
 
 testScore = math.sqrt(mean_squared_error(testY[0], testPredict[:, 0]))
 print('Test Score: %.2f RMSE' % (testScore))
-
-
-
-
-
