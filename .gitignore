@@ -132,6 +132,7 @@ dmypy.json
 
 *.jpg
 *.jpeg
+*.png
 *.hd5
 .idea/
 
