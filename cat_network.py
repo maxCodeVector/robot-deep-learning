@@ -1,18 +1,15 @@
-from tensorflow.python.keras.applications.inception_v3 import InceptionV3
-from tensorflow.python.keras.preprocessing import image
-from tensorflow.python.keras.models import Model, load_model
-from tensorflow.python.keras.callbacks import ModelCheckpoint
-from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D
-from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.python.keras.optimizers import SGD
 import os.path
 import sys
 
 from PIL import ImageFile
+from tensorflow.python.keras.applications.inception_v3 import InceptionV3
+from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping
+from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D
+from tensorflow.python.keras.models import Model, load_model
+from tensorflow.python.keras.optimizers import SGD
+from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-
 
 if len(sys.argv) > 1:
     MODEL_FILE = sys.argv[1]
@@ -41,10 +38,10 @@ def load_existing(model_file):
 
     num_layers = len(model.layers)
 
-    for layer in model.layers[:num_layers-3]:
+    for layer in model.layers[:num_layers - 3]:
         layer.trainable = False
 
-    for layer in model.layers[num_layers-3:]:
+    for layer in model.layers[num_layers - 3:]:
         layer.trainable = True
 
     return model
@@ -60,14 +57,20 @@ def train(model_file, train_path, validation_path,
         model = create_model(num_hidden=num_hidden, num_classes=num_classes)
 
     check_point = ModelCheckpoint(model_file, period=save_period)
+    stop_model = EarlyStopping(min_delta=0.001, patience=10)
+
     model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
     train_datagen = ImageDataGenerator(
-        rescale=1./255,
+        rescale=1. / 255,
         shear_range=0.2,
-        zoom_range=0.2,
-        horizontal_flip=True
+        zoom_range=0.3,
+        horizontal_flip=True,
+
+        rotation_range=20,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
     )
-    test_datagen = ImageDataGenerator(rescale=1./255)
+    test_datagen = ImageDataGenerator(rescale=1. / 255)
     train_generator = train_datagen.flow_from_directory(
         train_path,
         target_size=(249, 249),
@@ -100,7 +103,7 @@ def train(model_file, train_path, validation_path,
         train_generator,
         steps_per_epoch=steps,
         epochs=num_epochs,
-        callbacks=[check_point],
+        callbacks=[check_point, stop_model],
         validation_data=validation_generator,
         validation_steps=50
     )
@@ -109,7 +112,7 @@ def train(model_file, train_path, validation_path,
 
 def main():
     train(MODEL_FILE, train_path='cat_dataset', validation_path='cat_dataset_test',
-          steps=120, num_epochs=10)
+          steps=120, num_epochs=20)
 
 
 if __name__ == '__main__':
