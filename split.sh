@@ -1,5 +1,7 @@
 #! /bin/bash
 
+IFS=$'\n\b'
+
 declare testdir
 
 function move(){
@@ -7,7 +9,7 @@ function move(){
   files=`ls $dirpath`
   count=`ls -l $dirpath | grep "^-" | wc -l`
   cd $dirpath
-  movenum=$(($count/4))
+  movenum=$(($count/10))
 	echo "move $movenum in $count"
   for file in $files; do
     if [ $movenum -gt 0 ]; then
