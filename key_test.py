@@ -2,6 +2,7 @@ import tty
 import sys
 import termios
 import threading
+import http.server
 
 
 class Job(threading.Thread):
@@ -32,27 +33,14 @@ class Job(threading.Thread):
         self.__running.clear()        # 设置为False
 
 
-def join_control(ins):
+async def join_control(ins):
     for i in range(5):
-        print("You pressed", ins)
+        await print("You pressed", ins)
 
 
 if __name__ == '__main__':
 
-    t = Job()
-    t.setDaemon(True)
-    t.start()
+    import sys
+    ch = sys.stdin.read(1)
+    print(ch)
 
-    orig_settings = termios.tcgetattr(sys.stdin)
-
-    tty.setcbreak(sys.stdin)
-    x = 0
-    while x != chr(27):  # ESC
-        x = sys.stdin.read(1)[0]
-        t.pause()
-        join_control(x)
-        t.resume()
-
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, orig_settings)
-    print("now exit with coed 0")
-    exit(0)
