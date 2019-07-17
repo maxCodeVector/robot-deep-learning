@@ -3,15 +3,15 @@ from read_corpus import ReadCorpus
 from numpy import asarray
 from numpy import array
 import numpy as np
-from keras.models import Sequential, load_model
-from keras.layers import Dense
-from keras.layers import Flatten
-from keras.layers import Embedding
-from keras.layers import CuDNNLSTM
-from keras.layers import Dropout
-from keras.layers import Activation
-from keras.layers import TimeDistributed
-from keras.callbacks import ModelCheckpoint
+from tensorflow.python.keras.models import Sequential, load_model
+from tensorflow.python.keras.layers import Dense
+from tensorflow.python.keras.layers import Flatten
+from tensorflow.python.keras.layers import Embedding
+from tensorflow.python.keras.layers import CuDNNLSTM
+from tensorflow.python.keras.layers import Dropout
+from tensorflow.python.keras.layers import Activation
+from tensorflow.python.keras.layers import TimeDistributed
+from tensorflow.python.keras.callbacks import ModelCheckpoint
 from os.path import isfile
 
 batch_size = 30

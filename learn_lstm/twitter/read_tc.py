@@ -1,7 +1,7 @@
 import numpy as np
 import pandas
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+from tensorflow.python.keras.preprocessing.text import Tokenizer
+from tensorflow.python.keras.preprocessing.sequence import pad_sequences
 from constants import batch_size
 
 class ReadTC:

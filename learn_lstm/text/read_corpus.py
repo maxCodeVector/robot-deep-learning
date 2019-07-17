@@ -1,5 +1,5 @@
-from keras.preprocessing.text import Tokenizer
-from keras.utils import to_categorical
+from tensorflow.python.keras.preprocessing.text import Tokenizer
+from tensorflow.python.keras.utils import to_categorical
 from math import log
 import numpy as np
 import scipy
