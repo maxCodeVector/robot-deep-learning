@@ -69,6 +69,7 @@ def train(model_file, train_path, validation_path,
         rotation_range=20,
         width_shift_range=0.2,
         height_shift_range=0.2,
+        brightness_range=(0.8, 1.2)
     )
     test_datagen = ImageDataGenerator(rescale=1. / 255)
     train_generator = train_datagen.flow_from_directory(
