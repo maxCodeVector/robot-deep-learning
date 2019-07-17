@@ -87,7 +87,7 @@ def train(model_file, train_path, validation_path,
         train_generator,
         steps_per_epoch=steps,
         epochs=num_epochs,
-        callbacks=[check_point, stop_model],
+        callbacks=[check_point],
         validation_data=validation_generator,
         validation_steps=50
     )
@@ -103,7 +103,7 @@ def train(model_file, train_path, validation_path,
         train_generator,
         steps_per_epoch=steps,
         epochs=num_epochs,
-        callbacks=[check_point, stop_model],
+        callbacks=[check_point],
         validation_data=validation_generator,
         validation_steps=50
     )

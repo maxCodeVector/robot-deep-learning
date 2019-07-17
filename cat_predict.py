@@ -19,7 +19,7 @@ graph = None
 def classify(model, image):
     global graph
     if graph is None:
-        graph = tf.get_default_graph()
+        graph = tf.compat.v1.get_default_graph()
     with graph.as_default():
         result = model.predict(image)
         themax = np.argmax(result)
