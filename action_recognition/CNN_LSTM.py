@@ -17,8 +17,8 @@ else:
 print("model file will save in {}".format(MODEL_FILE))
 
 
-def create_model(num_frames=30, num_classes=27):
-    inputs = Input(shape=(num_frames, 112, 112, 3))  # Not quite sure this line
+def create_model(num_frames=30, num_classes=27, batch_size=10):
+    inputs = Input(shape=(num_frames, 112, 112, 3), batch_size=batch_size)  # Not quite sure this line
     # conv layer1
     conv1 = Convolution3D(64, kernel_size=(3, 3, 3), strides=(1, 1, 1), padding="same")(inputs)
     norm1 = BatchNormalization()(conv1)
@@ -157,7 +157,7 @@ def train(model_file, num_frames=30, num_class=27, batch_size=1, num_epochs=28, 
         model = load_existing(model_file)
     else:
         print("\n*** Creating new model ***\n\n")
-        model = create_model(num_frames=num_frames, num_classes=num_class)
+        model = create_model(num_frames=num_frames, num_classes=num_class, batch_size=batch_size)
 
     model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
