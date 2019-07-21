@@ -39,6 +39,10 @@ def train(model:Sequential, train_x, train_y,
     model.compile(loss='categorical_crossentropy',
                   optimizer='sgd',
                   metrics=['accuracy'])
+
+
+    model.summary()
+    return
     print('running for %d epoches.' % epoches)
     save_model = ModelCheckpoint(model_file)
     stop_model = EarlyStopping(min_delta=0.001, patience=10)
