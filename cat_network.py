@@ -57,7 +57,7 @@ def train(model_file, train_path, validation_path,
         model = create_model(num_hidden=num_hidden, num_classes=num_classes)
 
     check_point = ModelCheckpoint(model_file, period=save_period)
-    stop_model = EarlyStopping(min_delta=0.001, patience=10)
+    stop_model = EarlyStopping(min_delta=0.01, patience=10)
 
     model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
     train_datagen = ImageDataGenerator(
@@ -75,13 +75,13 @@ def train(model_file, train_path, validation_path,
     train_generator = train_datagen.flow_from_directory(
         train_path,
         target_size=(249, 249),
-        batch_size=4,
+        batch_size=32,
         class_mode='categorical'
     )
     validation_generator = test_datagen.flow_from_directory(
         validation_path,
         target_size=(249, 249),
-        batch_size=4,
+        batch_size=32,
         class_mode='categorical'
     )
     model.fit_generator(
@@ -113,7 +113,7 @@ def train(model_file, train_path, validation_path,
 
 def main():
     train(MODEL_FILE, train_path='cat_dataset', validation_path='cat_dataset_test',
-          steps=120, num_epochs=20)
+          steps=120, num_epochs=10)
 
 
 if __name__ == '__main__':
