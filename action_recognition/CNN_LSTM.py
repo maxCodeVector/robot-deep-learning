@@ -164,8 +164,8 @@ def train(model_file, num_frames=30, num_class=27, batch_size=1, num_epochs=28, 
     save_model = ModelCheckpoint(model_file, period=save_period)
     stop_model = EarlyStopping(min_delta=0.001, patience=10)
 
-    dataset = VideoDataset("/home/hya/Downloads/20bn-jester-v1", "dataset/jester-v1-train.csv",
-                           "/home/hya/Downloads/20bn-jester-v1_val", 'dataset/jester-v1-validation.csv',
+    dataset = VideoDataset("~/20bn-jester-v1", "dataset/jester-v1-train.csv",
+                           "~/20bn-jester-v1_val", 'dataset/jester-v1-validation.csv',
                            num_frames=num_frames, num_class=num_class)
 
     train_generator = dataset.get_trainset(batch_size=batch_size)
@@ -185,4 +185,4 @@ def train(model_file, num_frames=30, num_class=27, batch_size=1, num_epochs=28, 
 
 
 if __name__ == '__main__':
-    train(MODEL_FILE, num_class=27, num_frames=30, batch_size=1, num_epochs=20)
+    train(MODEL_FILE, num_class=27, num_frames=35, batch_size=15, num_epochs=20)
