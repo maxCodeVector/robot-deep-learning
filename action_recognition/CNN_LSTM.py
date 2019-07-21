@@ -2,13 +2,13 @@ import os
 import sys
 
 import numpy as np
-from tensorflow.python.keras import Input
-from tensorflow.python.keras.layers import Dense, ConvLSTM2D, MaxPool3D, Activation, Convolution3D
-from tensorflow.python.keras.layers import BatchNormalization, MaxPool2D, Concatenate, Flatten
-from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping
-from tensorflow.python.keras.models import load_model, Sequential, Model
 from PIL import Image
-
+from tensorflow.python.keras import Input
+from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping
+from tensorflow.python.keras.layers import BatchNormalization, MaxPool2D, Flatten
+from tensorflow.python.keras.layers import Dense, ConvLSTM2D, MaxPool3D, Activation, Convolution3D, concatenate
+from tensorflow.python.keras.models import load_model, Model
+from tensorflow.python.keras.utils import to_categorical
 
 if len(sys.argv) > 1:
     MODEL_FILE = sys.argv[1]
@@ -17,8 +17,8 @@ else:
 print("model file will save in {}".format(MODEL_FILE))
 
 
-def create_model(batch_size=1):
-    inputs = Input(shape=(36, 112, 112, 3), batch_size=batch_size)  # Not quite sure this line
+def create_model(num_frames=30, num_classes=27):
+    inputs = Input(shape=(num_frames, 112, 112, 3))  # Not quite sure this line
     # conv layer1
     conv1 = Convolution3D(64, kernel_size=(3, 3, 3), strides=(1, 1, 1), padding="same")(inputs)
     norm1 = BatchNormalization()(conv1)
@@ -58,14 +58,14 @@ def create_model(batch_size=1):
     spp7 = MaxPool2D(pool_size=(4, 4), strides=(4, 4))(pre_output)
     spp7 = Flatten()(spp7)
 
-    merge = Concatenate([spp1, spp2, spp4, spp7], name="Concat")
+    merge = concatenate([spp1, spp2, spp4, spp7], name="Concat")
 
-    final_model = Sequential()
-    final_model.add(merge)
+    # final_model = Sequential()
+    # final_model.add(merge)
     # FC Layer
-    # classes = Dense(27, activation='softmax')(merge)
-    # final_model = Model(inputs=[input_video, ], outputs=classes)
-    final_model.add(Dense(27, activation='softmax'))
+    classes = Dense(num_classes, activation='softmax')(merge)
+    final_model = Model(inputs=[inputs, ], outputs=classes)
+    # final_model.add(Dense(classes, activation='softmax'))
 
     return final_model
 
@@ -77,12 +77,21 @@ def load_existing(model_file):
 
 class VideoDataset:
 
-    def __init__(self, path, ground_path):
+    def __init__(self, train_path, train_y, test_path, test_y,
+                 target_size=(112, 112), num_frames=30, num_class=27):
         self.data_num = 0
-        self.path = path
-        self.ground_path = ground_path
+        self.train_path = train_path
+        self.train_y = train_y
+
+        self.test_path = test_path
+        self.test_y = test_y
+
+        self.target_size = target_size
+        self.num_frame = num_frames
+        self.num_class = num_class
+
+        self.label_list = None  # a list of hand gesture
         self.label_dict = dict()
-        self.label_list = []  # a list of hand gesture
         self.ground_truth_list = self.__load_ground_truth()
 
     def __load_ground_truth(self):
@@ -91,73 +100,89 @@ class VideoDataset:
             for i, label in enumerate(self.label_list):
                 self.label_dict[label] = i
         ground_truth_list = np.zeros(150000, dtype=np.int)
-        with open(self.ground_path, "r") as fdata:
+        with open(self.train_y, "r") as fdata:
             info = fdata.readlines()
-            self.data_num = len(info)
+            self.data_num += len(info)
+            for i, datalabel in enumerate(info):
+                data = datalabel.split(";")
+                ground_truth_list[int(data[0])] = self.label_dict[data[1]]
+        with open(self.test_y, "r") as fdata:
+            info = fdata.readlines()
+            self.data_num = +len(info)
             for i, datalabel in enumerate(info):
                 data = datalabel.split(";")
                 ground_truth_list[int(data[0])] = self.label_dict[data[1]]
         return ground_truth_list
 
-    def get_trainset(self):
-        for video_folder in os.listdir(self.path):
-            path = os.path.join(self.path, video_folder)
-            yield VideoDataset.get_video_set(path), self.ground_truth_list[int(video_folder)]
+    def get_trainset(self, batch_size):
+        return self.get_data_Iter(self.train_path, batch_size)
 
-    @staticmethod
-    def get_video_set(path):
+    def get_testset(self, batch_size):
+        return self.get_data_Iter(self.test_path, batch_size)
+
+    def get_data_Iter(self, dataset_path, batch_size):
+        file_list = os.listdir(dataset_path)
+        while True:
+            file_list = list(set(file_list))
+            for video_index in range(0, len(file_list), batch_size):
+                if video_index + batch_size > len(file_list):
+                    break
+                X, Y = [], []
+                for i in range(batch_size):
+                    path = os.path.join(dataset_path, file_list[video_index+i])
+                    X.append(self.get_video_set(path))
+                    Ylabel = self.ground_truth_list[int(file_list[video_index+i])]
+                    Y.append(to_categorical(Ylabel, self.num_class))
+                yield np.array(X), np.array(Y)
+
+    def get_video_set(self, path):
         img_list = []
+        last = None
+        img_paths = os.listdir(path)
+        img_paths.sort()
         for img_path in os.listdir(path):
             img_abs_path = os.path.join(path, img_path)
-            img_list.append(np.array(Image.open(img_abs_path)))
+            last = np.array(Image.open(img_abs_path).resize(self.target_size))
+            img_list.append(last)
+        while len(img_list) < self.num_frame:
+            img_list.append(last)
+        if len(img_list) > self.num_frame:
+            img_list = img_list[0:self.num_frame]
         return np.array(img_list)
 
-    def get_testset(self):
-        return None, None
 
-
-def train(model_file, dataset, step=32, num_epochs=28, save_period=1):
+def train(model_file, num_frames=30, num_class=27, batch_size=1, num_epochs=28, save_period=1):
     if os.path.exists(model_file):
         print('\n*** existing model found at {}. Loading. ***\n\n'.format(model_file))
         model = load_existing(model_file)
     else:
         print("\n*** Creating new model ***\n\n")
-        model = create_model()
+        model = create_model(num_frames=num_frames, num_classes=num_class)
 
-    model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
+    model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
     save_model = ModelCheckpoint(model_file, period=save_period)
     stop_model = EarlyStopping(min_delta=0.001, patience=10)
 
-    exit(1)
-    train_gene = dataset.get_trainset()
-    test_x, test_y = dataset.get_testset()
+    dataset = VideoDataset("/home/hya/Downloads/20bn-jester-v1", "dataset/jester-v1-train.csv",
+                           "/home/hya/Downloads/20bn-jester-v1_val", 'dataset/jester-v1-validation.csv',
+                           num_frames=num_frames, num_class=num_class)
 
-    for i in range(num_epochs):
-        print("Iter: %d of %d" % (i, num_epochs))
-        for train_x, train_y in train_gene:
-            model.fit(train_x, train_y,
-                      epochs=1, batch_size=20,
-                      validation_data=(test_x, test_y),
-                      callbacks=[save_model, stop_model],
-                      verbose=2, shuffle=False)
-        model.reset_states()
+    train_generator = dataset.get_trainset(batch_size=batch_size)
+    test_generator = dataset.get_testset(batch_size=batch_size)
 
-    # model.fit(x=train_x, y=train_y,
-    #           shuffle=True,
-    #           batch_size=60,
-    #           epochs=epochs,
-    #           validation_data=(test_x, test_y),
-    #           callbacks=[save_model, stop_model])
+    # for train_x, train_y in test_generator:
+    #     pass
+    model.fit_generator(
+        train_generator,
+        steps_per_epoch=500,
+        epochs=num_epochs,
+        callbacks=[save_model, stop_model],
+        validation_data=test_generator,
+        validation_steps=10
+    )
     print("Done training, Now evaluating.")
-    loss, acc = model.evaluate(x=test_x, y=test_y)
-
-    print("Final loss: %3.2f Final accuracy: %3.2f" % (loss, acc))
 
 
 if __name__ == '__main__':
-    dataset = VideoDataset("/home/hya/Downloads/20bn-jester-v1", "dataset/jester-v1-train.csv")
-    # for x, y in dataset.get_trainset():
-    #     print(x, y)
-
-    train(MODEL_FILE, dataset)
+    train(MODEL_FILE, num_class=27, num_frames=30, batch_size=1, num_epochs=20)

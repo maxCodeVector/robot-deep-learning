@@ -48,9 +48,7 @@ def train(model_file, train_path, validation_path,
         print("\n*** Creating new model ***\n\n")
         model = create_model(num_hidden=num_hidden, num_classes=num_classes)
 
-
     model.summary()
-    return
     check_point = ModelCheckpoint(model_file, period=save_period)
     model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
     train_datagen = ImageDataGenerator(
