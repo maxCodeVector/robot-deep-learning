@@ -82,4 +82,4 @@ def main(multi_type=False):
 
 
 if __name__ == '__main__':
-    main(multi_type=True)
+    main(multi_type=False)

@@ -1,9 +1,18 @@
+import os
 import tty
 import sys
 import termios
 import threading
-import http.server
-
+import keyboard  # using module keyboard
+while True:  # making a loop
+    try:  # used try so that if user pressed other than the given key error will not be shown
+        if keyboard.is_pressed('q'):  # if key 'q' is pressed
+            print('You Pressed A Key!')
+            break  # finishing the loop
+        else:
+            pass
+    except:
+        break  #
 
 class Job(threading.Thread):
 
@@ -14,13 +23,16 @@ class Job(threading.Thread):
         self.__running = threading.Event()      # 用于停止线程的标识
         self.__running.set()      # 将running设置为True
 
-        self.ins = 'w'
+        self.ins = 'x'
 
     def run(self):
         while self.__running.isSet():
             self.__flag.wait()      # 为True时立即返回, 为False时阻塞直到内部的标识位为True后返回
             print(self.ins, end='')
             # time.sleep(1)
+
+    def set_ins(self, s):
+        self.ins = s
 
     def pause(self):
         self.__flag.clear()     # 设置为False, 让线程阻塞
@@ -41,6 +53,10 @@ async def join_control(ins):
 if __name__ == '__main__':
 
     import sys
+
+    os.system("stty -echo")
     ch = sys.stdin.read(1)
     print(ch)
+    os.system("stty echo")
+
 
