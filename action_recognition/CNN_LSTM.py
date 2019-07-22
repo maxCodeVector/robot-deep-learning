@@ -38,12 +38,13 @@ def create_model(num_frames=30, num_classes=27, batch_size=10):
     pre_output_temp = ConvLSTM2D(256, kernel_size=3,
                                  strides=(1, 1),
                                  padding='same',
+                                 batch_input_shape=(batch_size, num_frames / 2, 1),
                                  return_sequences=True,
                                  stateful=True)(act3)
     pre_output = ConvLSTM2D(256, kernel_size=3,
                             strides=(1, 1),
                             padding='same',
-                            batch_input_shape=(None, 18, 1),
+                            batch_input_shape=(batch_size, num_frames / 2, 1),
                             stateful=True)(pre_output_temp)
     # SPP Layer
     spp1 = MaxPool2D(pool_size=(28, 28), strides=(28, 28))(pre_output)
@@ -63,6 +64,7 @@ def create_model(num_frames=30, num_classes=27, batch_size=10):
     # final_model = Sequential()
     # final_model.add(merge)
     # FC Layer
+    # merge = Dense(1024, activation='relu')(merge)
     classes = Dense(num_classes, activation='softmax')(merge)
     final_model = Model(inputs=[inputs, ], outputs=classes)
     # final_model.add(Dense(classes, activation='softmax'))
@@ -150,6 +152,24 @@ class VideoDataset:
             img_list = img_list[0:self.num_frame]
         return np.array(img_list)
 
+    def get_train_data_all(self):
+        X, Y = [], []
+        for folder in os.listdir(self.train_path):
+            path = os.path.join(self.train_path, folder)
+            X.append(self.get_video_set(path))
+            Ylabel = self.ground_truth_list[int(folder)]
+            Y.append(to_categorical(Ylabel, self.num_class))
+        return np.array(X), np.array(Y)
+
+    def get_test_data_all(self):
+        X, Y = [], []
+        for folder in os.listdir(self.test_path):
+            path = os.path.join(self.test_path, folder)
+            X.append(self.get_video_set(path))
+            Ylabel = self.ground_truth_list[int(folder)]
+            Y.append(to_categorical(Ylabel, self.num_class))
+        return np.array(X), np.array(Y)
+
 
 def train(model_file, num_frames=30, num_class=27, batch_size=1, num_epochs=28, save_period=1):
     if os.path.exists(model_file):
@@ -159,19 +179,36 @@ def train(model_file, num_frames=30, num_class=27, batch_size=1, num_epochs=28, 
         print("\n*** Creating new model ***\n\n")
         model = create_model(num_frames=num_frames, num_classes=num_class, batch_size=batch_size)
 
+    model.summary()
+    exit(1)
     model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
 
     save_model = ModelCheckpoint(model_file, period=save_period)
     stop_model = EarlyStopping(min_delta=0.001, patience=10)
 
-    dataset = VideoDataset("~/20bn-jester-v1", "dataset/jester-v1-train.csv",
-                           "~/20bn-jester-v1_val", 'dataset/jester-v1-validation.csv',
+    dataset = VideoDataset("../../20bn-jester-v1", "dataset/jester-v1-train.csv",
+                           "../../20bn-jester-v1_val", 'dataset/jester-v1-validation.csv',
                            num_frames=num_frames, num_class=num_class)
 
     train_generator = dataset.get_trainset(batch_size=batch_size)
     test_generator = dataset.get_testset(batch_size=batch_size)
 
-    # for train_x, train_y in test_generator:
+    for i in range(num_epochs):
+        print("Iter: %d of %d" % (i, num_epochs))
+        # model.fit(trainX, trainY, epochs=1, batch_size=batch_size, verbose=2, shuffle=False)
+        model.fit_generator(
+            train_generator,
+            steps_per_epoch=500,
+            epochs=1,
+            callbacks=[save_model],
+            validation_data=test_generator,
+            validation_steps=10
+        )
+        model.reset_states()
+
+    print("Done training, Now evaluating.")
+    exit(0)
+    # train_x, train_y = dataset.get_test_data_all()
     #     pass
     model.fit_generator(
         train_generator,
@@ -185,4 +222,4 @@ def train(model_file, num_frames=30, num_class=27, batch_size=1, num_epochs=28, 
 
 
 if __name__ == '__main__':
-    train(MODEL_FILE, num_class=27, num_frames=35, batch_size=15, num_epochs=20)
+    train(MODEL_FILE, num_class=27, num_frames=30, batch_size=10, num_epochs=20)
