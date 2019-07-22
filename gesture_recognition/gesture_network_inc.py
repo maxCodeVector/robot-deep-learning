@@ -1,28 +1,20 @@
-import os.path
-import sys
-
-from PIL import ImageFile
 from tensorflow.python.keras.applications.inception_v3 import InceptionV3
-from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping
-from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D
+from tensorflow.python.keras.preprocessing import image
 from tensorflow.python.keras.models import Model, load_model
-from tensorflow.python.keras.optimizers import SGD
+from tensorflow.python.keras.callbacks import ModelCheckpoint
+from tensorflow.python.keras.layers import Dense, GlobalAveragePooling2D
 from tensorflow.python.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.python.keras.optimizers import SGD
+import os.path
 
-ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-if len(sys.argv) > 1:
-    MODEL_FILE = sys.argv[1]
-else:
-    MODEL_FILE = "cat_net.hd5"
-print("model file will save in", MODEL_FILE)
+MODEL_FILE = 'gesture_network_inc.hd5'
 
 
-def create_model(num_hidden, num_classes):
+def create_model(num_classes):
     base_model = InceptionV3(include_top=False, weights='imagenet')
     x = base_model.output
     x = GlobalAveragePooling2D()(x)
-    x = Dense(num_hidden, activation='relu')(x)
+    x = Dense(256, activation='relu')(x)
     predictions = Dense(num_classes, activation='softmax')(x)
 
     for layer in base_model.layers:
@@ -38,28 +30,26 @@ def load_existing(model_file):
 
     num_layers = len(model.layers)
 
-    for layer in model.layers[:num_layers - 3]:
+    for layer in model.layers[:num_layers-3]:
         layer.trainable = False
 
-    for layer in model.layers[num_layers - 3:]:
+    for layer in model.layers[num_layers-3:]:
         layer.trainable = True
 
     return model
 
 
-def train(model_file, train_path, validation_path,
-          num_hidden=200, num_classes=4, steps=32, num_epochs=28, save_period=1):
+def train(model_file, train_path, validation_path, target_size=(256, 256),
+         num_classes=5, steps=32, num_epochs=28):
     if os.path.exists(model_file):
         print('\n*** existing model found at {}. Loading. ***\n\n'.format(model_file))
         model = load_existing(model_file)
     else:
         print("\n*** Creating new model ***\n\n")
-        model = create_model(num_hidden=num_hidden, num_classes=num_classes)
+        model = create_model(num_classes=num_classes)
 
-    check_point = ModelCheckpoint(model_file, period=save_period)
-    stop_model = EarlyStopping(min_delta=0.01, patience=10)
-
-    model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
+    check_point = ModelCheckpoint(model_file, period=1)
+    model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
     train_datagen = ImageDataGenerator(
         rescale=1. / 255,
         shear_range=0.3,
@@ -71,16 +61,16 @@ def train(model_file, train_path, validation_path,
         height_shift_range=0.2,
         brightness_range=(0.8, 1.2)
     )
-    test_datagen = ImageDataGenerator(rescale=1. / 255)
+    test_datagen = ImageDataGenerator(rescale=1./255)
     train_generator = train_datagen.flow_from_directory(
         train_path,
-        target_size=(249, 249),
+        target_size=target_size,
         batch_size=32,
         class_mode='categorical'
     )
     validation_generator = test_datagen.flow_from_directory(
         validation_path,
-        target_size=(249, 249),
+        target_size=target_size,
         batch_size=32,
         class_mode='categorical'
     )
@@ -88,7 +78,7 @@ def train(model_file, train_path, validation_path,
         train_generator,
         steps_per_epoch=steps,
         epochs=num_epochs,
-        callbacks=[check_point, stop_model],
+        callbacks=[check_point, ],
         validation_data=validation_generator,
         validation_steps=50
     )
@@ -99,20 +89,19 @@ def train(model_file, train_path, validation_path,
         layer.trainable = True
 
     model.compile(optimizer=SGD(lr=0.00001, momentum=0.9),
-                  loss='categorical_crossentropy', metrics=['accuracy'])
+                  loss='categorical_crossentropy')
     model.fit_generator(
         train_generator,
         steps_per_epoch=steps,
         epochs=num_epochs,
-        callbacks=[check_point, stop_model],
+        callbacks=[check_point],
         validation_data=validation_generator,
         validation_steps=50
     )
-    print("Done training, Now evaluating.")
 
 
 def main():
-    train(MODEL_FILE, train_path='cat_dataset', validation_path='cat_dataset_test',
+    train(MODEL_FILE, train_path='flower_photos', validation_path='flower_photos',
           steps=120, num_epochs=10)
 
 
