@@ -83,7 +83,7 @@ def train(model_file, train_path, validation_path, target_size=(227, 227),
         model = get_alnext_net(num_classes=num_classes)
 
     check_point = ModelCheckpoint(model_file, period=1)
-    model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
+    model.compile(optimizer='rmsprop', loss='categorical_crossentropy', metrics=['accuracy'])
     train_datagen = ImageDataGenerator(
         rescale=1. / 255,
         shear_range=0.3,
