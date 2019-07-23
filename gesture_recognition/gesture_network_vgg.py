@@ -82,7 +82,8 @@ def train(model_file, train_path, validation_path, target_size=(256, 256),
         epochs=num_epochs,
         callbacks=[check_point, ],
         validation_data=validation_generator,
-        validation_steps=50
+        validation_steps=50,
+        shuffle=True,
     )
     for layer in model.layers[:249]:
         layer.trainable = False
